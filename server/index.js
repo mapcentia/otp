@@ -12,23 +12,26 @@ const shared = require('../../../controllers/gc2/shared');
 const request = require('request');
 
 router.get('/api/otp/', function (req, response) {
-    let url = 'http://localhost:8801/otp/routers/default/isochrone?fromPlace=57.043034621624,9.917040896417&mode=BUS,WALK&date=09-20-2021&time=8:00am&maxWalkDistance=500&cutoffSec=1800&cutoffSec=3600';
+    let data = JSON.parse(req.query.custom_data);
+    console.log(data)
+    let url = `http://localhost:8801/otp/routers/default/isochrone?fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=900&cutoffSec=1800&cutoffSec=3600`;
+    console.log(url)
     request.get(url, function (err, res, body) {
         let json;
-        if (err || res.statusCode !== 200) {
-            response.header('content-type', 'application/json');
-            response.status(400).send({
-                success: false,
-                message: "Could not get the requested config JSON file."
-            });
-            return;
-        }
         try {
             json = JSON.parse(body);
         } catch (e) {
             response.status(400).send({
                 success: false,
                 message: e.message
+            });
+            return;
+        }
+        if (err || res.statusCode !== 200) {
+            response.header('content-type', 'application/json');
+            response.status(400).send({
+                success: false,
+                message: json
             });
             return;
         }
