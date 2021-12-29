@@ -50,19 +50,54 @@ module.exports = module.exports = {
 
                 this.state = {
                     date: dayjs().format("YYYY-MM-DD"),
-                    time: dayjs().format("HH:mm")
+                    time: dayjs().format("HH:mm"),
+                    numOfClass: 3,
+                    startTime: 10,
+                    endTime: 30,
                 };
 
                 this.load = this.load.bind(this);
-                this.handleChangeTime = this.handleChangeTime.bind(this);
-                this.handleChangeDate = this.handleChangeDate.bind(this);
+                this.handleChange = this.handleChange.bind(this);
             }
 
-            handleChangeTime(event) {
-                this.setState({time: event.target.value});
+            handleChange(event) {
+                switch (event.target.id) {
+                    case 'otp-time':
+                        this.setState({time: event.target.value});
+                        break;
+                    case 'otp-date':
+                        this.setState({date: event.target.value});
+                        break;
+                    case 'otp-num-of-class':
+                        this.setState({numOfClass: parseInt(event.target.value)});
+                        break;
+                    case 'otp-start-time':
+                        this.setState({startTime: parseInt(event.target.value)});
+                        break;
+                    case 'otp-end-time':
+                        this.setState({endTime: parseInt(event.target.value)});
+                        break;
+                }
+                setTimeout(()=>{
+                    console.log(this.state)
+                    this.createClasses()
+                }, 100)
             }
-            handleChangeDate(event) {
-                this.setState({date: event.target.value});
+
+            createClasses() {
+                let start = this.state.startTime * 60;
+                let end = this.state.endTime * 60;
+                let num =this.state.numOfClass;
+
+                let diff = end - start;
+                let interval = diff / num;
+                console.log("diff", diff)
+                console.log("interval", interval)
+                for (let i = 0; i <= num; i++) {
+                    let top = start + (interval * i);
+                    let bottom = top - interval;
+                    console.log("bottom", bottom)
+                }
             }
 
             componentDidMount() {
@@ -71,7 +106,8 @@ module.exports = module.exports = {
 
                 // Stop listening to any events, deactivate controls, but
                 // keep effects of the module until they are deleted manually or reset:all is emitted
-                backboneEvents.get().on("deactivate:all", () => {});
+                backboneEvents.get().on("deactivate:all", () => {
+                });
 
                 // Activates module
                 backboneEvents.get().on(`on:${exId}`, () => {
@@ -173,12 +209,27 @@ module.exports = module.exports = {
                             <div className="form-group">
                                 <label htmlFor="otp-date">Dato</label>
                                 <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
-                                       value={this.state.date} onChange={this.handleChangeDate}/>
+                                       value={this.state.date} onChange={this.handleChange}/>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="otp-time">Tid</label>
                                 <input type="time" id="otp-time" className="form-control" value={this.state.time}
-                                       onChange={this.handleChangeTime}/>
+                                       onChange={this.handleChange}/>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="otp-num-of-class">Antal klasser</label>
+                                <input type="number" id="otp-num-of-class" className="form-control" value={this.state.numOfClass}
+                                       onChange={this.handleChange}/>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="otp-start-time">Første tid</label>
+                                <input type="number" id="otp-start-time" className="form-control" value={this.state.startTime}
+                                       onChange={this.handleChange}/>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="otp-end-time">Sidste tid</label>
+                                <input type="number" id="otp-end-time" className="form-control" value={this.state.endTime}
+                                       onChange={this.handleChange}/>
                             </div>
                         </form>
                     </div>
