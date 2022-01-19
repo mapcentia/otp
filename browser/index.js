@@ -1,6 +1,8 @@
 const React = require("react");
 const search = require("./../../../browser/modules/search/danish");
 const dayjs = require("dayjs");
+import Gradient from "javascript-color-gradient";
+
 const exId = 'otp';
 let cloud;
 let utils;
@@ -8,6 +10,8 @@ let transformPoint;
 let backboneEvents;
 let store;
 let clicktimer;
+const colorGradient = new Gradient();
+
 module.exports = module.exports = {
 
     /**
@@ -49,11 +53,15 @@ module.exports = module.exports = {
                 super(props);
 
                 this.state = {
-                    date: dayjs().format("YYYY-MM-DD"),
+                    date: dayjs("2021-09-10").format("YYYY-MM-DD"),
                     time: dayjs().format("HH:mm"),
                     numOfClass: 3,
                     startTime: 10,
                     endTime: 30,
+                    intervals: [600, 1200, 1800],
+                    startColor: '#ff0000',
+                    endColor: '#00ff00',
+                    colorGradient: ['#aa5500', '#55aa00', '#00ff00']
                 };
 
                 this.load = this.load.bind(this);
@@ -77,27 +85,43 @@ module.exports = module.exports = {
                     case 'otp-end-time':
                         this.setState({endTime: parseInt(event.target.value)});
                         break;
+                    case 'otp-start-color':
+                        this.setState({startColor: event.target.value});
+                        break;
+                    case 'otp-end-color':
+                        this.setState({endColor: event.target.value});
+                        break;
                 }
-                setTimeout(()=>{
-                    console.log(this.state)
-                    this.createClasses()
+                setTimeout(() => {
+                    this.createClasses();
+                    console.log(this.state);
                 }, 100)
             }
 
             createClasses() {
                 let start = this.state.startTime * 60;
                 let end = this.state.endTime * 60;
-                let num =this.state.numOfClass;
+                let num = this.state.numOfClass;
+                let startColor = this.state.startColor;
+                let endColor = this.state.endColor;
 
-                let diff = end - start;
-                let interval = diff / num;
-                console.log("diff", diff)
-                console.log("interval", interval)
-                for (let i = 0; i <= num; i++) {
-                    let top = start + (interval * i);
-                    let bottom = top - interval;
-                    console.log("bottom", bottom)
+                let arr = [];
+                if (num === 1) {
+                    arr.push(start);
+                    colorGradient.setGradient(startColor, startColor);
+                    colorGradient.setMidpoint(1);
+                } else {
+                    let diff = end - start;
+                    let interval = diff / (num - 1);
+                    for (let i = 0; i < num; i++) {
+                        arr.push(start + (interval * i));
+                    }
+                    colorGradient.setGradient(startColor, endColor);
+                    colorGradient.setMidpoint(num);
+
                 }
+                this.setState({intervals: arr})
+                this.setState({colorGradient: colorGradient.getArray()})
             }
 
             componentDidMount() {
@@ -127,17 +151,22 @@ module.exports = module.exports = {
                     db: "",
                     clickable: true,
                     sql: "sdssd",
-                    styleMap: {
-                        weight: 1,
-                        color: '#00ff00',
-                        dashArray: '',
-                        fillOpacity: 0.2,
-                        opacity: 0.7
+                    styleMap: (feature, layer) => {
+                        let time = feature.properties.time;
+                        let i = this.state.intervals.indexOf(time);
+                        let color = this.state.colorGradient[i];
+                        return {
+                            weight: 1,
+                            color: color,
+                            dashArray: '',
+                            fillOpacity: 1,
+                            opacity: 1
+                        }
                     },
                     error: function () {
                     },
                     onLoad: function () {
-                        cloud.get().zoomToExtentOfgeoJsonStore(this, 17)
+                        // cloud.get().zoomToExtentOfgeoJsonStore(this, 17)
                     }
                 });
                 cloud.get().addGeoJsonStore(store);
@@ -188,6 +217,7 @@ module.exports = module.exports = {
                     y: geojson.coordinates[1],
                     date: dayjs(this.state.date).format('MM-DD-YYYY'),
                     time: this.state.time,
+                    intervals: this.state.intervals,
                 }
                 store.custom_data = JSON.stringify(q);
                 store.load();
@@ -218,17 +248,34 @@ module.exports = module.exports = {
                             </div>
                             <div className="form-group">
                                 <label htmlFor="otp-num-of-class">Antal klasser</label>
-                                <input type="number" id="otp-num-of-class" className="form-control" value={this.state.numOfClass}
+                                <input type="number" id="otp-num-of-class" className="form-control"
+                                       value={this.state.numOfClass}
+                                       min="1"
+                                       max="7"
                                        onChange={this.handleChange}/>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="otp-start-time">Første tid</label>
-                                <input type="number" id="otp-start-time" className="form-control" value={this.state.startTime}
+                                <input type="number" id="otp-start-time" className="form-control"
+                                       value={this.state.startTime}
                                        onChange={this.handleChange}/>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="otp-end-time">Sidste tid</label>
-                                <input type="number" id="otp-end-time" className="form-control" value={this.state.endTime}
+                                <input type="number" id="otp-end-time" className="form-control"
+                                       value={this.state.endTime}
+                                       onChange={this.handleChange}/>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="otp-start-color">Første farve</label>
+                                <input type="color" id="otp-start-color" className="form-control"
+                                       value={this.state.startColor}
+                                       onChange={this.handleChange}/>
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="otp-end-color">Første farve</label>
+                                <input type="color" id="otp-end-color" className="form-control"
+                                       value={this.state.endColor}
                                        onChange={this.handleChange}/>
                             </div>
                         </form>

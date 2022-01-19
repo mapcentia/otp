@@ -14,7 +14,9 @@ const request = require('request');
 router.get('/api/otp/', function (req, response) {
     let data = JSON.parse(req.query.custom_data);
     console.log(data)
-    let url = `http://localhost:8801/otp/routers/default/isochrone?fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=900&cutoffSec=1800&cutoffSec=3600`;
+    let cutOffSec = data.intervals.join('&cutoffSec=')
+    console.log(cutOffSec);
+    let url = `http://localhost:8801/otp/routers/default/isochrone?fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
     console.log(url)
     request.get(url, function (err, res, body) {
         let json;
