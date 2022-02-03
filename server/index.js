@@ -1,14 +1,12 @@
 /*
  * @author     Martin Høgh <mh@mapcentia.com>
- * @copyright  2013-2021 MapCentia ApS
+ * @copyright  2013-2022 MapCentia ApS
  * @license    http://www.gnu.org/licenses/#AGPL  GNU AFFERO GENERAL PUBLIC LICENSE 3
  */
 
 const express = require('express');
 const router = express.Router();
 const configUrl = require('../../../config/config.js').configUrl;
-const host = require('../../../config/config.js').gc2.host;
-const shared = require('../../../controllers/gc2/shared');
 const request = require('request');
 
 router.get('/api/otp/', function (req, response) {
@@ -16,7 +14,7 @@ router.get('/api/otp/', function (req, response) {
     console.log(data)
     let cutOffSec = data.intervals.join('&cutoffSec=')
     console.log(cutOffSec);
-    let url = `http://localhost:8801/otp/routers/default/isochrone?fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
+    let url = `http://otp.vidi.gc2.io/otp/routers/default/isochrone?fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
     console.log(url)
     request.get(url, function (err, res, body) {
         let json;
