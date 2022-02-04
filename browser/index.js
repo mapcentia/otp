@@ -322,7 +322,7 @@ module.exports = module.exports = {
                                        onChange={this.handleChange}/>
                             </div>
                             <div className="form-group">
-                                <label htmlFor="otp-end-color">Første farve</label>
+                                <label htmlFor="otp-end-color">Sidste farve</label>
                                 <input type="color" id="otp-end-color" className="form-control"
                                        value={this.state.endColor}
                                        onChange={this.handleChange}/>
