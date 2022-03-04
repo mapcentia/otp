@@ -14,7 +14,7 @@ router.get('/api/otp/', function (req, response) {
     console.log(data)
     let cutOffSec = data.intervals.join('&cutoffSec=')
     console.log(cutOffSec);
-    let url = `http://otp.vidi.gc2.io/otp/routers/default/isochrone?fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
+    let url = `http://otp.vidi.gc2.io/otp/routers/default/isochrone?arriveBy=FALSE&fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
     console.log(url)
     request.get(url, function (err, res, body) {
         let json;
