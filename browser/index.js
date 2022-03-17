@@ -15,13 +15,14 @@ let store;
 let state;
 let clicktimer;
 let _self;
-let moduleState = {};
+let mState = null;
 let mapObj;
 let marker;
+let active = false;
 const colorGradient = new Gradient();
 
 const setSnapShot = (state) => {
-    moduleState = state;
+    mState = state;
     backboneEvents.get().trigger(`${MODULE_ID}:state_change`);
 }
 
@@ -39,7 +40,8 @@ const defaultState = {
     legendChecks: [true, true, true],
     fromSnapShot: false,
     coords: null,
-    opacity: 1
+    opacity: 1,
+    arriveBy: false
 };
 
 class Otp extends React.Component {
@@ -51,11 +53,15 @@ class Otp extends React.Component {
         this.handleOpacityChange = this.handleOpacityChange.bind(this);
         this.handleLegendCheck = this.handleLegendCheck.bind(this);
         this.resetAll = this.resetAll.bind(this);
+        this.resetOnlyMap = this.resetOnlyMap.bind(this);
         this.refresh = this.refresh.bind(this);
     }
 
     handleChange(event) {
         switch (event.target.id) {
+            case 'otp-arrive-by':
+                this.setState({arriveBy: event.target.checked});
+                break;
             case 'otp-time':
                 this.setState({time: event.target.value});
                 break;
@@ -88,9 +94,8 @@ class Otp extends React.Component {
         let v = event.target.value;
         this.setState({opacity: v});
         store.layer.eachLayer(l => {
-            console.log(l)
             if (l.options.fillOpacity !== 0)
-            l.setStyle({fillOpacity: v});
+                l.setStyle({fillOpacity: v});
 
         })
         setSnapShot(this.state)
@@ -115,14 +120,14 @@ class Otp extends React.Component {
                     l.setStyle(
                         {
                             fillOpacity: me.state.opacity,
-                            opacity: 1
+                            opacity: 0.5
                         }
                     )
                 } else {
                     l.setStyle(
                         {
                             fillOpacity: 0,
-                            opacity: 0
+                            opacity: 0.5
                         }
                     )
                 }
@@ -162,29 +167,13 @@ class Otp extends React.Component {
     componentDidMount() {
         let me = this;
         let uri = '/api/otp';
-
-        // Stop listening to any events, deactivate controls, but
-        // keep effects of the module until they are deleted manually or reset:all is emitted
-        backboneEvents.get().on("deactivate:all", () => {
-        });
-
-        // Activates module
-        backboneEvents.get().on(`on:${MODULE_ID}`, () => {
-            utils.cursorStyle().crosshair();
-        });
-
-        // Deactivates module
-        backboneEvents.get().on(`off:${MODULE_ID} off:all reset:all`, () => {
-            utils.cursorStyle().reset();
-        });
-
         store = new geocloud.sqlStore({
             jsonp: false,
             method: "GET",
             host: "",
             uri: uri,
             db: "",
-            clickable: true,
+            clickable: false,
             sql: "sdssd",
             styleMap: (feature, layer) => {
                 let time = feature.properties.time;
@@ -196,8 +185,11 @@ class Otp extends React.Component {
                     color: color,
                     dashArray: '',
                     fillOpacity: opacity,
-                    opacity: 1
+                    opacity: 0.5
                 }
+            },
+            onEachFeature: function (f, l) {
+                    l._vidi_type = "query_result";
             },
             error: function () {
             },
@@ -216,27 +208,27 @@ class Otp extends React.Component {
         }, "opt-custom-search");
 
         // Handle click events on map
-        // ==========================
-
         mapObj.on("dblclick", function () {
             clicktimer = undefined;
         });
         mapObj.on("click", function (e) {
-            var event = new geocloud.clickEvent(e, cloud);
-            if (clicktimer) {
-                clearTimeout(clicktimer);
-            } else {
-                if (me.state.active === false) {
-                    return;
+            if (active) {
+                const event = new geocloud.clickEvent(e, cloud);
+                if (clicktimer) {
+                    clearTimeout(clicktimer);
+                } else {
+                    if (me.state.active === false) {
+                        return;
+                    }
+                    clicktimer = setTimeout(function (e) {
+                        clicktimer = undefined;
+                        let coords = event.getCoordinate(), p;
+                        p = utils.transform("EPSG:3857", "EPSG:4326", coords);
+                        let arr = [p.x, p.y];
+                        me.setState({coords: arr})
+                        me.makeSearch(arr);
+                    }, 250);
                 }
-                clicktimer = setTimeout(function (e) {
-                    clicktimer = undefined;
-                    var coords = event.getCoordinate(), p;
-                    p = utils.transform("EPSG:3857", "EPSG:4326", coords);
-                    let arr = [p.x, p.y];
-                    me.setState({coords: arr})
-                    me.makeSearch(arr);
-                }, 250);
             }
         });
     }
@@ -246,25 +238,26 @@ class Otp extends React.Component {
             this.props.defaultState.fromSnapShot = false;
             this.setState(this.props.defaultState);
             this.setState({fromSnapShot: false})
-            this.resetMap();
+            resetMap();
             setTimeout(() => {
                 let ds = this.props.defaultState
                 store.layer.addData(ds.geoJSON);
-                if (marker) mapObj.removeLayer(marker)
-                marker = L.marker([ds.coords[1], ds.coords[0]]).addTo(mapObj);
+                if (marker) mapObj.removeLayer(marker);
+                addMarker([ds.coords[1], ds.coords[0]]);
             }, 100)
         }
     }
 
     makeSearch(coords, zoom) {
         if (marker) mapObj.removeLayer(marker)
-        marker = L.marker([coords[1], coords[0]]).addTo(mapObj);
+        addMarker([coords[1], coords[0]]);
         let q = {
             x: coords[0],
             y: coords[1],
             date: dayjs(this.state.date).format('MM-DD-YYYY'),
             time: this.state.time,
             intervals: this.state.intervals,
+            arriveBy: this.state.arriveBy
         }
         store.custom_data = JSON.stringify(q);
         store.load();
@@ -274,14 +267,16 @@ class Otp extends React.Component {
         store.load();
     }
 
-    resetMap() {
-        if (marker) mapObj.removeLayer(marker)
-        store.reset();
-    }
 
     resetAll() {
-        this.resetMap();
+        resetMap();
         this.setState(defaultState);
+    }
+
+    resetOnlyMap() {
+        this.setState({geoJSON: null})
+        setSnapShot(this.state);
+        resetMap();
     }
 
     refresh() {
@@ -299,8 +294,8 @@ class Otp extends React.Component {
                     height: "30px",
                     backgroundColor: f,
                     display: "inline-block"
-                }}>&nbsp;</div>
-            {this.state.intervals[i]}</li>);
+                }}>&nbsp;</div>&nbsp;&#60;&nbsp;
+            {Math.round(this.state.intervals[i]/60)} minutter</li>);
 
         return (
             <div>
@@ -308,6 +303,14 @@ class Otp extends React.Component {
                     <input id="opt-custom-search"
                            className="ejendom-custom-search typeahead" type="text"
                            placeholder="Adresse eller matrikelnr."/>
+                </div>
+                <div className="form-group">
+                    <div className="togglebutton">
+                        <label>
+                            <input type="checkbox" id="otp-arrive-by" className="togglebutton"
+                                   checked={this.state.arriveBy} onChange={this.handleChange}/> Ankomsttid
+                        </label>
+                    </div>
                 </div>
                 <div className="form-group">
                     <label htmlFor="otp-date">Dato</label>
@@ -320,7 +323,7 @@ class Otp extends React.Component {
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-num-of-class">Antal klasser</label>
+                    <label htmlFor="otp-num-of-class">Antal intervaller (max. 7)</label>
                     <input type="number" id="otp-num-of-class" className="form-control"
                            value={this.state.numOfClass}
                            min="1"
@@ -328,39 +331,40 @@ class Otp extends React.Component {
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-start-time">Første tid</label>
+                    <label htmlFor="otp-start-time">Første rejsetidsinddeling i minutter</label>
                     <input type="number" id="otp-start-time" className="form-control"
                            value={this.state.startTime}
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-end-time">Sidste tid</label>
+                    <label htmlFor="otp-end-time">Maksimale rejsetid i minutter</label>
                     <input type="number" id="otp-end-time" className="form-control"
                            value={this.state.endTime}
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-start-color">Første farve</label>
+                    <label htmlFor="otp-start-color">Startfarve</label>
                     <input type="color" id="otp-start-color" className="form-control"
                            value={this.state.startColor}
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-end-color">Sidste farve</label>
+                    <label htmlFor="otp-end-color">Slutfarve</label>
                     <input type="color" id="otp-end-color" className="form-control"
                            value={this.state.endColor}
                            onChange={this.handleChange}/>
                 </div>
                 <div>
+                    <label htmlFor="opacity">Gennemsigtighed</label>
                     <input type="range" id="opacity" name="opacity"
-                           min="0.01" max="1" step="0.01" value={this.state.opacity} onChange={this.handleOpacityChange}/>
-                    <label htmlFor="volume">Gennemsigtighed</label>
+                           min="0.01" max="1" step="0.01" value={this.state.opacity}
+                           onChange={this.handleOpacityChange}/>
                 </div>
                 <div>
                     <button disabled={this.state.coords === null} className="btn btn-primary"
                             onClick={this.refresh}>Genberegn
                     </button>
-                    <button className="btn btn-danger" onClick={this.resetAll}>Nulstil</button>
+                    <button className="btn btn-danger" onClick={this.resetOnlyMap}>Nulstil</button>
                 </div>
                 <div>
                     <ul style={{listStyleType: "none", padding: 0, margin: 0}}>{legendItems}</ul>
@@ -383,21 +387,46 @@ module.exports = module.exports = {
     },
 
     init: function () {
+        const me = this;
         mapObj = cloud.get().map;
         state.listenTo(MODULE_ID, _self);
         state.listen(MODULE_ID, `state_change`);
-        state.getModuleState(MODULE_ID).then(initialState => {
-            //_self.applyState(initialState)
+        utils.createMainTab(MODULE_ID, "Rejsetid", "Hej Hej", require('./../../../browser/modules/height')().max, "timer", false, MODULE_ID);
+        backboneEvents.get().on(`off:all`, () => {
+            utils.cursorStyle().reset();
+            active = false;
+            // resetMap();
         });
-        utils.createMainTab(MODULE_ID, "OTP", "Hej Hej", require('./../../../browser/modules/height')().max, "home", false, MODULE_ID);
-        ReactDOM.render(
-            <Otp defaultState={defaultState}/>,
-            document.getElementById(MODULE_ID)
-        );
+        backboneEvents.get().on("on:" + MODULE_ID, () => {
+            utils.cursorStyle().crosshair();
+            active = true;
+            state.getModuleState(MODULE_ID).then(initialState => {
+                let ds = initialState || defaultState;
+                console.log(ds)
+                ReactDOM.render(
+                    <Otp defaultState={ds}/>,
+                    document.getElementById(MODULE_ID)
+                );
+                resetMap();
+                setTimeout(() => {
+                    if (ds.geoJSON) {
+                        store.layer.addData(ds.geoJSON);
+                    }
+                    if (marker) {
+                        mapObj.removeLayer(marker)
+                    }
+                    if (ds.coords) {
+                        addMarker([ds.coords[1], ds.coords[0]])
+                    }
+                }, 100)
+            });
+        })
     },
+
+
     getState: () => {
-        console.log("GET STATE", moduleState)
-        return moduleState;
+        console.log("GET STATE", mState)
+        return mState;
     },
 
     applyState: (newState) => {
@@ -412,5 +441,16 @@ module.exports = module.exports = {
             }
             resolve();
         });
-    }
+    },
 };
+const resetMap = () => {
+    if (marker) mapObj.removeLayer(marker)
+    if (store) store.reset();
+}
+const addMarker = (coord) => {
+
+    marker = L.marker(coord).addTo(mapObj);
+    marker._vidi_type = "query_result";
+    marker._vidi_marker = true
+}
+
