@@ -17,10 +17,10 @@ let clicktimer;
 let _self;
 let moduleState = {};
 let mapObj;
+let marker;
 const colorGradient = new Gradient();
 
 const setSnapShot = (state) => {
-    console.log(state)
     moduleState = state;
     backboneEvents.get().trigger(`${MODULE_ID}:state_change`);
 }
@@ -38,6 +38,8 @@ const defaultState = {
     geoJSON: null,
     legendChecks: [true, true, true],
     fromSnapShot: false,
+    coords: null,
+    opacity: 1
 };
 
 class Otp extends React.Component {
@@ -46,7 +48,10 @@ class Otp extends React.Component {
         this.state = props.defaultState;
         this.load = this.load.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.handleOpacityChange = this.handleOpacityChange.bind(this);
         this.handleLegendCheck = this.handleLegendCheck.bind(this);
+        this.resetAll = this.resetAll.bind(this);
+        this.refresh = this.refresh.bind(this);
     }
 
     handleChange(event) {
@@ -75,10 +80,24 @@ class Otp extends React.Component {
         }
         setTimeout(() => {
             this.createClasses();
+            setSnapShot(this.state)
         }, 100)
     }
 
+    handleOpacityChange(event) {
+        let v = event.target.value;
+        this.setState({opacity: v});
+        store.layer.eachLayer(l => {
+            console.log(l)
+            if (l.options.fillOpacity !== 0)
+            l.setStyle({fillOpacity: v});
+
+        })
+        setSnapShot(this.state)
+    }
+
     handleLegendCheck(event) {
+        let me = this
         const checked = event.target.checked;
         const value = event.target.value;
         this.setState({
@@ -95,7 +114,7 @@ class Otp extends React.Component {
                 if (checked) {
                     l.setStyle(
                         {
-                            fillOpacity: 1,
+                            fillOpacity: me.state.opacity,
                             opacity: 1
                         }
                     )
@@ -110,6 +129,7 @@ class Otp extends React.Component {
                 console.log(l)
             }
         })
+        setSnapShot(this.state)
     }
 
     createClasses() {
@@ -140,7 +160,7 @@ class Otp extends React.Component {
     }
 
     componentDidMount() {
-        var me = this;
+        let me = this;
         let uri = '/api/otp';
 
         // Stop listening to any events, deactivate controls, but
@@ -170,13 +190,13 @@ class Otp extends React.Component {
                 let time = feature.properties.time;
                 let i = this.state.intervals.indexOf(time);
                 let color = this.state.colorGradient[i];
-                let opacity = this.state.legendChecks[i] ? 1 : 0;
+                let opacity = this.state.legendChecks[i] ? me.state.opacity : 0;
                 return {
                     weight: 1,
                     color: color,
                     dashArray: '',
                     fillOpacity: opacity,
-                    opacity: opacity
+                    opacity: 1
                 }
             },
             error: function () {
@@ -190,7 +210,9 @@ class Otp extends React.Component {
         cloud.get().addGeoJsonStore(store);
 
         search.init(function () {
-            me.makeSearch(this.geoJSON.features[0].geometry, true)
+            let coords = [...this.geoJSON.features[0].geometry.coordinates];
+            me.setState({coords: coords})
+            me.makeSearch(coords, true)
         }, "opt-custom-search");
 
         // Handle click events on map
@@ -211,12 +233,9 @@ class Otp extends React.Component {
                     clicktimer = undefined;
                     var coords = event.getCoordinate(), p;
                     p = utils.transform("EPSG:3857", "EPSG:4326", coords);
-                    me.makeSearch(
-                        {
-                            coordinates: [p.x, p.y],
-                            type: "Point"
-                        }
-                    );
+                    let arr = [p.x, p.y];
+                    me.setState({coords: arr})
+                    me.makeSearch(arr);
                 }, 250);
             }
         });
@@ -228,16 +247,21 @@ class Otp extends React.Component {
             this.setState(this.props.defaultState);
             this.setState({fromSnapShot: false})
             this.resetMap();
-            setTimeout(()=> {
-                store.layer.addData(this.props.defaultState.geoJSON)
+            setTimeout(() => {
+                let ds = this.props.defaultState
+                store.layer.addData(ds.geoJSON);
+                if (marker) mapObj.removeLayer(marker)
+                marker = L.marker([ds.coords[1], ds.coords[0]]).addTo(mapObj);
             }, 100)
         }
     }
 
-    makeSearch(geojson, zoom) {
+    makeSearch(coords, zoom) {
+        if (marker) mapObj.removeLayer(marker)
+        marker = L.marker([coords[1], coords[0]]).addTo(mapObj);
         let q = {
-            x: geojson.coordinates[0],
-            y: geojson.coordinates[1],
+            x: coords[0],
+            y: coords[1],
             date: dayjs(this.state.date).format('MM-DD-YYYY'),
             time: this.state.time,
             intervals: this.state.intervals,
@@ -251,7 +275,17 @@ class Otp extends React.Component {
     }
 
     resetMap() {
-       store.reset();
+        if (marker) mapObj.removeLayer(marker)
+        store.reset();
+    }
+
+    resetAll() {
+        this.resetMap();
+        this.setState(defaultState);
+    }
+
+    refresh() {
+        this.makeSearch(this.state.coords)
     }
 
     render() {
@@ -275,53 +309,62 @@ class Otp extends React.Component {
                            className="ejendom-custom-search typeahead" type="text"
                            placeholder="Adresse eller matrikelnr."/>
                 </div>
-                <form className="form">
-                    <div className="form-group">
-                        <label htmlFor="otp-date">Dato</label>
-                        <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
-                               value={this.state.date} onChange={this.handleChange}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="otp-time">Tid</label>
-                        <input type="time" id="otp-time" className="form-control" value={this.state.time}
-                               onChange={this.handleChange}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="otp-num-of-class">Antal klasser</label>
-                        <input type="number" id="otp-num-of-class" className="form-control"
-                               value={this.state.numOfClass}
-                               min="1"
-                               max="7"
-                               onChange={this.handleChange}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="otp-start-time">Første tid</label>
-                        <input type="number" id="otp-start-time" className="form-control"
-                               value={this.state.startTime}
-                               onChange={this.handleChange}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="otp-end-time">Sidste tid</label>
-                        <input type="number" id="otp-end-time" className="form-control"
-                               value={this.state.endTime}
-                               onChange={this.handleChange}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="otp-start-color">Første farve</label>
-                        <input type="color" id="otp-start-color" className="form-control"
-                               value={this.state.startColor}
-                               onChange={this.handleChange}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="otp-end-color">Sidste farve</label>
-                        <input type="color" id="otp-end-color" className="form-control"
-                               value={this.state.endColor}
-                               onChange={this.handleChange}/>
-                    </div>
-                    <div>
-                        <ul style={{listStyleType: "none", padding: 0, margin: 0}}>{legendItems}</ul>
-                    </div>
-                </form>
+                <div className="form-group">
+                    <label htmlFor="otp-date">Dato</label>
+                    <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
+                           value={this.state.date} onChange={this.handleChange}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-time">Tid</label>
+                    <input type="time" id="otp-time" className="form-control" value={this.state.time}
+                           onChange={this.handleChange}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-num-of-class">Antal klasser</label>
+                    <input type="number" id="otp-num-of-class" className="form-control"
+                           value={this.state.numOfClass}
+                           min="1"
+                           max="7"
+                           onChange={this.handleChange}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-start-time">Første tid</label>
+                    <input type="number" id="otp-start-time" className="form-control"
+                           value={this.state.startTime}
+                           onChange={this.handleChange}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-end-time">Sidste tid</label>
+                    <input type="number" id="otp-end-time" className="form-control"
+                           value={this.state.endTime}
+                           onChange={this.handleChange}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-start-color">Første farve</label>
+                    <input type="color" id="otp-start-color" className="form-control"
+                           value={this.state.startColor}
+                           onChange={this.handleChange}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-end-color">Sidste farve</label>
+                    <input type="color" id="otp-end-color" className="form-control"
+                           value={this.state.endColor}
+                           onChange={this.handleChange}/>
+                </div>
+                <div>
+                    <input type="range" id="opacity" name="opacity"
+                           min="0.01" max="1" step="0.01" value={this.state.opacity} onChange={this.handleOpacityChange}/>
+                    <label htmlFor="volume">Gennemsigtighed</label>
+                </div>
+                <div>
+                    <button disabled={this.state.coords === null} className="btn btn-primary"
+                            onClick={this.refresh}>Genberegn
+                    </button>
+                    <button className="btn btn-danger" onClick={this.resetAll}>Nulstil</button>
+                </div>
+                <div>
+                    <ul style={{listStyleType: "none", padding: 0, margin: 0}}>{legendItems}</ul>
+                </div>
             </div>
         );
     }
@@ -359,7 +402,6 @@ module.exports = module.exports = {
 
     applyState: (newState) => {
         return new Promise((resolve) => {
-            //_self.resetState();
             console.log(newState)
             newState.fromSnapShot = true;
             if (newState) {
@@ -368,7 +410,6 @@ module.exports = module.exports = {
                     document.getElementById(MODULE_ID)
                 );
             }
-            //backboneEvents.get().trigger(`${MODULE_ID}:state_change`);
             resolve();
         });
     }
