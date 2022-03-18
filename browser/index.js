@@ -192,7 +192,8 @@ class Otp extends React.Component {
             onEachFeature: function (f, l) {
                     l._vidi_type = "query_result";
             },
-            error: function () {
+            error: function (o,err) {
+                alert(err.responseJSON.message)
             },
             onLoad: function (e) {
                 // cloud.get().zoomToExtentOfgeoJsonStore(this, 17)
