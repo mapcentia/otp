@@ -131,10 +131,11 @@ class Otp extends React.Component {
                         }
                     )
                 }
-                console.log(l)
             }
         })
-        setSnapShot(this.state)
+        setTimeout(()=>{
+            setSnapShot(this.state)
+        }, 100)
     }
 
     createClasses() {
@@ -364,7 +365,7 @@ class Otp extends React.Component {
                     <button disabled={this.state.coords === null} className="btn btn-primary"
                             onClick={this.refresh}>Genberegn
                     </button>
-                    <button className="btn btn-danger" onClick={this.resetOnlyMap}>Nulstil</button>
+                    <button className="btn btn-danger" onClick={this.resetOnlyMap}>Ryd kort</button>
                 </div>
                 <div>
                     <ul style={{listStyleType: "none", padding: 0, margin: 0}}>{legendItems}</ul>
@@ -450,7 +451,7 @@ const resetMap = () => {
 const addMarker = (coord) => {
 
     marker = L.marker(coord).addTo(mapObj);
-    marker._vidi_type = "query_result";
+    marker._vidi_type = "query_draw";
     marker._vidi_marker = true
 }
 
