@@ -403,7 +403,6 @@ module.exports = module.exports = {
             active = true;
             state.getModuleState(MODULE_ID).then(initialState => {
                 let ds = initialState || defaultState;
-                console.log(ds)
                 ReactDOM.render(
                     <Otp defaultState={ds}/>,
                     document.getElementById(MODULE_ID)
@@ -426,13 +425,12 @@ module.exports = module.exports = {
 
 
     getState: () => {
-        console.log("GET STATE", mState)
+        // console.log("GET STATE", mState)
         return mState;
     },
 
     applyState: (newState) => {
         return new Promise((resolve) => {
-            console.log(newState)
             newState.fromSnapShot = true;
             if (newState) {
                 ReactDOM.render(
@@ -449,7 +447,6 @@ const resetMap = () => {
     if (store) store.reset();
 }
 const addMarker = (coord) => {
-
     marker = L.marker(coord).addTo(mapObj);
     marker._vidi_type = "query_draw";
     marker._vidi_marker = true
