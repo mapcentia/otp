@@ -318,7 +318,7 @@ class Otp extends React.Component {
                            placeholder="Adresse eller matrikelnr."/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-route">OTP route</label>
+                    <label htmlFor="otp-route">Køreplan</label>
                     <select value={this.state.route} id="otp-route" className="form-control" onChange={this.handleChange}>
                         {otpRoutes.map(rt =>
                             <option  key={rt} value={rt}>{rt}</option>
