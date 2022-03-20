@@ -20,6 +20,8 @@ let mapObj;
 let marker;
 let active = false;
 const colorGradient = new Gradient();
+const config = require('../../../config/config.js');
+const otpRoutes = config?.extensionConfig?.otp?.routes || ['default'];
 
 const setSnapShot = (state) => {
     mState = state;
@@ -41,7 +43,8 @@ const defaultState = {
     fromSnapShot: false,
     coords: null,
     opacity: 1,
-    arriveBy: false
+    arriveBy: false,
+    route: 'nt'
 };
 
 class Otp extends React.Component {
@@ -55,10 +58,16 @@ class Otp extends React.Component {
         this.resetAll = this.resetAll.bind(this);
         this.resetOnlyMap = this.resetOnlyMap.bind(this);
         this.refresh = this.refresh.bind(this);
+        this.marginBottomXl = {
+            marginBottom: "24px"
+        };
     }
 
     handleChange(event) {
         switch (event.target.id) {
+            case 'otp-route':
+                this.setState({route: event.target.value});
+                break;
             case 'otp-arrive-by':
                 this.setState({arriveBy: event.target.checked});
                 break;
@@ -133,7 +142,7 @@ class Otp extends React.Component {
                 }
             }
         })
-        setTimeout(()=>{
+        setTimeout(() => {
             setSnapShot(this.state)
         }, 100)
     }
@@ -190,9 +199,9 @@ class Otp extends React.Component {
                 }
             },
             onEachFeature: function (f, l) {
-                    l._vidi_type = "query_result";
+                l._vidi_type = "query_result";
             },
-            error: function (o,err) {
+            error: function (o, err) {
                 alert(err.responseJSON.message)
             },
             onLoad: function (e) {
@@ -259,7 +268,8 @@ class Otp extends React.Component {
             date: dayjs(this.state.date).format('MM-DD-YYYY'),
             time: this.state.time,
             intervals: this.state.intervals,
-            arriveBy: this.state.arriveBy
+            arriveBy: this.state.arriveBy,
+            route: this.state.route
         }
         store.custom_data = JSON.stringify(q);
         store.load();
@@ -296,8 +306,9 @@ class Otp extends React.Component {
                     height: "30px",
                     backgroundColor: f,
                     display: "inline-block"
-                }}>&nbsp;</div>&nbsp;&#60;&nbsp;
-            {Math.round(this.state.intervals[i]/60)} minutter</li>);
+                }}>&nbsp;</div>
+            &nbsp;&#60;&nbsp;
+            {Math.round(this.state.intervals[i] / 60)} minutter</li>);
 
         return (
             <div>
@@ -305,6 +316,14 @@ class Otp extends React.Component {
                     <input id="opt-custom-search"
                            className="ejendom-custom-search typeahead" type="text"
                            placeholder="Adresse eller matrikelnr."/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="otp-route">OTP route</label>
+                    <select value={this.state.route} id="otp-route" className="form-control" onChange={this.handleChange}>
+                        {otpRoutes.map(rt =>
+                            <option  key={rt} value={rt}>{rt}</option>
+                        )};
+                    </select>
                 </div>
                 <div className="form-group">
                     <div className="togglebutton">

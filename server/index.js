@@ -10,11 +10,11 @@ const configUrl = require('../../../config/config.js').configUrl;
 const request = require('request');
 
 router.get('/api/otp/', function (req, response) {
-    let data = JSON.parse(req.query.custom_data);
+    const data = JSON.parse(req.query.custom_data);
     console.log(data)
-    let cutOffSec = data.intervals.join('&cutoffSec=')
-    console.log(cutOffSec);
-    let url = `http://otp.vidi.gc2.io/otp/routers/default/isochrone?arriveBy=${data.arriveBy}&fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
+    const cutOffSec = data.intervals.join('&cutoffSec=')
+    const route = data.route !== null ? data.route : "default";
+    const url = `https://otp.vidi.gc2.io/otp/routers/${route}/isochrone?arriveBy=${data.arriveBy ? "1": "0"}&fromPlace=${data.y},${data.x}&mode=BUS,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=500&cutoffSec=${cutOffSec}`;
     console.log(url)
     request.get(url, function (err, res, body) {
         let json;
