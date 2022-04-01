@@ -96,7 +96,7 @@ class Otp extends React.Component {
         setTimeout(() => {
             this.createClasses();
             setSnapShot(this.state)
-        }, 100)
+        }, 500)
     }
 
     handleOpacityChange(event) {
@@ -144,7 +144,7 @@ class Otp extends React.Component {
         })
         setTimeout(() => {
             setSnapShot(this.state)
-        }, 100)
+        }, 500)
     }
 
     createClasses() {
@@ -255,7 +255,8 @@ class Otp extends React.Component {
                 store.layer.addData(ds.geoJSON);
                 if (marker) mapObj.removeLayer(marker);
                 addMarker([ds.coords[1], ds.coords[0]]);
-            }, 100)
+                setSnapShot(this.state)
+            }, 500)
         }
     }
 
