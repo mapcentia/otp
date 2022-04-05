@@ -44,7 +44,8 @@ const defaultState = {
     coords: null,
     opacity: 1,
     arriveBy: false,
-    route: 'nt'
+    route: 'nt',
+    maxWalkDistance: 500
 };
 
 class Otp extends React.Component {
@@ -79,6 +80,9 @@ class Otp extends React.Component {
                 break;
             case 'otp-num-of-class':
                 this.setState({numOfClass: parseInt(event.target.value)});
+                break;
+            case 'otp-max-walk-distance':
+                this.setState({maxWalkDistance: parseInt(event.target.value)});
                 break;
             case 'otp-start-time':
                 this.setState({startTime: parseInt(event.target.value)});
@@ -136,7 +140,7 @@ class Otp extends React.Component {
                     l.setStyle(
                         {
                             fillOpacity: 0,
-                            opacity: 0.5
+                            opacity: 0
                         }
                     )
                 }
@@ -189,20 +193,22 @@ class Otp extends React.Component {
                 let time = feature.properties.time;
                 let i = this.state.intervals.indexOf(time);
                 let color = this.state.colorGradient[i];
-                let opacity = this.state.legendChecks[i] ? me.state.opacity : 0;
+                let fillOpacity = this.state.legendChecks[i] ? me.state.opacity : 0;
+                let opacity = this.state.legendChecks[i] ? 0.5 : 0;
                 return {
                     weight: 1,
-                    color: color,
+                    color,
                     dashArray: '',
-                    fillOpacity: opacity,
-                    opacity: 0.5
+                    fillOpacity,
+                    opacity
                 }
             },
             onEachFeature: function (f, l) {
                 l._vidi_type = "query_result";
             },
             error: function (o, err) {
-                alert(err.responseJSON.message)
+                console.error(err.responseJSON.message);
+                alert('Det er sket en fejl. Det er sandsynligvis forårsaget af et ugyldigt parametervalg. Tilpasse indstillingerne og prøv igen');
             },
             onLoad: function (e) {
                 // cloud.get().zoomToExtentOfgeoJsonStore(this, 17)
@@ -252,9 +258,9 @@ class Otp extends React.Component {
             resetMap();
             setTimeout(() => {
                 let ds = this.props.defaultState
-                store.layer.addData(ds.geoJSON);
+                if (ds.geoJSON) store.layer.addData(ds.geoJSON);
                 if (marker) mapObj.removeLayer(marker);
-                addMarker([ds.coords[1], ds.coords[0]]);
+                if (ds.coords) addMarker([ds.coords[1], ds.coords[0]]);
                 setSnapShot(this.state)
             }, 500)
         }
@@ -270,7 +276,8 @@ class Otp extends React.Component {
             time: this.state.time,
             intervals: this.state.intervals,
             arriveBy: this.state.arriveBy,
-            route: this.state.route
+            route: this.state.route,
+            maxWalkDistance: this.state.maxWalkDistance
         }
         store.custom_data = JSON.stringify(q);
         store.load();
@@ -320,37 +327,36 @@ class Otp extends React.Component {
                 </div>
                 <div className="form-group">
                     <label htmlFor="otp-route">Køreplan</label>
-                    <select value={this.state.route} id="otp-route" className="form-control" onChange={this.handleChange}>
+                    <select value={this.state.route} id="otp-route" className="form-control"
+                            onChange={this.handleChange}>
                         {otpRoutes.map(rt =>
-                            <option  key={rt} value={rt}>{rt}</option>
+                            <option key={rt} value={rt}>{rt}</option>
                         )};
                     </select>
                 </div>
                 <div className="form-group">
                     <div className="togglebutton">
                         <label>
-                            <input type="checkbox" id="otp-arrive-by" className="togglebutton"
-                                   checked={this.state.arriveBy} onChange={this.handleChange}/> Ankomsttid
+                            Afgangstid <input type="checkbox" id="otp-arrive-by" className="togglebutton"
+                                              checked={this.state.arriveBy} onChange={this.handleChange}/> Ankomsttid
                         </label>
                     </div>
                 </div>
-                <div className="form-group">
-                    <label htmlFor="otp-date">Dato</label>
-                    <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
-                           value={this.state.date} onChange={this.handleChange}/>
-                </div>
-                <div className="form-group">
-                    <label htmlFor="otp-time">Tid</label>
-                    <input type="time" id="otp-time" className="form-control" value={this.state.time}
-                           onChange={this.handleChange}/>
-                </div>
-                <div className="form-group">
-                    <label htmlFor="otp-num-of-class">Antal intervaller (max. 7)</label>
-                    <input type="number" id="otp-num-of-class" className="form-control"
-                           value={this.state.numOfClass}
-                           min="1"
-                           max="7"
-                           onChange={this.handleChange}/>
+                <div className="row">
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label htmlFor="otp-date">Dato</label>
+                            <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
+                                   value={this.state.date} onChange={this.handleChange}/>
+                        </div>
+                    </div>
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label htmlFor="otp-time">Tid</label>
+                            <input type="time" id="otp-time" className="form-control" value={this.state.time}
+                                   onChange={this.handleChange}/>
+                        </div>
+                    </div>
                 </div>
                 <div className="form-group">
                     <label htmlFor="otp-start-time">Første rejsetidsinddeling i minutter</label>
@@ -365,16 +371,36 @@ class Otp extends React.Component {
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-start-color">Startfarve</label>
-                    <input type="color" id="otp-start-color" className="form-control"
-                           value={this.state.startColor}
+                    <label htmlFor="otp-num-of-class">Antal intervaller (max. 7)</label>
+                    <input type="number" id="otp-num-of-class" className="form-control"
+                           value={this.state.numOfClass}
+                           min="1"
+                           max="7"
                            onChange={this.handleChange}/>
                 </div>
                 <div className="form-group">
-                    <label htmlFor="otp-end-color">Slutfarve</label>
-                    <input type="color" id="otp-end-color" className="form-control"
-                           value={this.state.endColor}
+                    <label htmlFor="otp-max-walk-distance">Maksimal gangafstand i meter</label>
+                    <input type="number" id="otp-max-walk-distance" className="form-control"
+                           value={this.state.maxWalkDistance}
                            onChange={this.handleChange}/>
+                </div>
+                <div className="row">
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label htmlFor="otp-start-color">Startfarve</label>
+                            <input type="color" id="otp-start-color" className="form-control"
+                                   value={this.state.startColor}
+                                   onChange={this.handleChange}/>
+                        </div>
+                    </div>
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label htmlFor="otp-end-color">Slutfarve</label>
+                            <input type="color" id="otp-end-color" className="form-control"
+                                   value={this.state.endColor}
+                                   onChange={this.handleChange}/>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label htmlFor="opacity">Gennemsigtighed</label>
@@ -451,14 +477,13 @@ module.exports = module.exports = {
     },
 
     applyState: (newState) => {
+        const state = newState ? newState : defaultState;
         return new Promise((resolve) => {
-            newState.fromSnapShot = true;
-            if (newState) {
-                ReactDOM.render(
-                    <Otp defaultState={newState}/>,
-                    document.getElementById(MODULE_ID)
-                );
-            }
+            state.fromSnapShot = true;
+            ReactDOM.render(
+                <Otp defaultState={state}/>,
+                document.getElementById(MODULE_ID)
+            );
             resolve();
         });
     },
