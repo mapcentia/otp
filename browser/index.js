@@ -21,32 +21,39 @@ let marker;
 let active = false;
 const colorGradient = new Gradient();
 const config = require('../../../config/config.js');
-const otpRoutes = config?.extensionConfig?.otp?.routes || ['default'];
+const routes = config?.extensionConfig?.otp?.routes || ['default'];
+const defaults = config?.extensionConfig?.otp?.defaults;
 
 const setSnapShot = (state) => {
     mState = state;
     backboneEvents.get().trigger(`${MODULE_ID}:state_change`);
 }
 
-const defaultState = {
-    date: dayjs().format("YYYY-MM-DD"),
-    time: dayjs().format("HH:mm"),
-    numOfClass: 3,
-    startTime: 10,
-    endTime: 30,
-    intervals: [600, 1200, 1800],
-    startColor: '#ff0000',
-    endColor: '#00ff00',
-    colorGradient: ['#aa5500', '#55aa00', '#00ff00'],
+let defaultState = {
+    numOfClass: null,
+    startTime: defaults?.startTime || 10,
+    endTime: defaults?.endTime|| 30,
+    intervals: defaults?.intervals || [600, 1200, 1800],
+    startColor: defaults?.startColor || '#ff0000',
+    endColor: defaults?.endColor ||'#00ff00',
+    opacity: defaults?.opacity || 0.7,
+    arriveBy: defaults?.arriveBy || false,
+    route:  defaults?.route || 'default',
+    maxWalkDistance: defaults?.maxWalkDistance || 500,
+    colorGradient: [],
     geoJSON: null,
-    legendChecks: [true, true, true],
+    legendChecks: [],
     fromSnapShot: false,
     coords: null,
-    opacity: 1,
-    arriveBy: false,
-    route: 'nt',
-    maxWalkDistance: 500
+    date: dayjs().format("YYYY-MM-DD"),
+    time: dayjs().format("HH:mm"),
 };
+
+colorGradient.setGradient(defaultState.startColor, defaultState.endColor);
+colorGradient.setMidpoint(defaultState.intervals.length);
+defaultState.colorGradient = colorGradient.getArray();
+defaultState.numOfClass = defaultState.intervals.length;
+defaultState.legendChecks = Array(defaultState.numOfClass).fill(true)
 
 class Otp extends React.Component {
     constructor(props) {
@@ -177,6 +184,7 @@ class Otp extends React.Component {
         this.setState({colorGradient: colorGradient.getArray()})
         this.setState({legendChecks: Array(num).fill(true)})
     }
+
 
     componentDidMount() {
         let me = this;
@@ -329,7 +337,7 @@ class Otp extends React.Component {
                     <label htmlFor="otp-route">Køreplan</label>
                     <select value={this.state.route} id="otp-route" className="form-control"
                             onChange={this.handleChange}>
-                        {otpRoutes.map(rt =>
+                        {routes.map(rt =>
                             <option key={rt} value={rt}>{rt}</option>
                         )};
                     </select>
