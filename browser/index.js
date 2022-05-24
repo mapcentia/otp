@@ -23,6 +23,8 @@ const colorGradient = new Gradient();
 const config = require('../../../config/config.js');
 const routes = config?.extensionConfig?.otp?.routes || ['default'];
 const defaults = config?.extensionConfig?.otp?.defaults;
+const parameters = config?.extensionConfig?.otp?.parameters || {};
+const helpText = config?.extensionConfig?.otp?.helpText || "";
 
 const setSnapShot = (state) => {
     mState = state;
@@ -32,13 +34,13 @@ const setSnapShot = (state) => {
 let defaultState = {
     numOfClass: null,
     startTime: defaults?.startTime || 10,
-    endTime: defaults?.endTime|| 30,
+    endTime: defaults?.endTime || 30,
     intervals: defaults?.intervals || [600, 1200, 1800],
     startColor: defaults?.startColor || '#ff0000',
-    endColor: defaults?.endColor ||'#00ff00',
+    endColor: defaults?.endColor || '#00ff00',
     opacity: defaults?.opacity || 0.7,
     arriveBy: defaults?.arriveBy || false,
-    route:  defaults?.route || 'default',
+    route: defaults?.route || 'default',
     maxWalkDistance: defaults?.maxWalkDistance || 500,
     colorGradient: [],
     geoJSON: null,
@@ -285,7 +287,8 @@ class Otp extends React.Component {
             intervals: this.state.intervals,
             arriveBy: this.state.arriveBy,
             route: this.state.route,
-            maxWalkDistance: this.state.maxWalkDistance
+            maxWalkDistance: this.state.maxWalkDistance,
+            parameters
         }
         store.custom_data = JSON.stringify(q);
         store.load();
@@ -447,7 +450,7 @@ module.exports = module.exports = {
         mapObj = cloud.get().map;
         state.listenTo(MODULE_ID, _self);
         state.listen(MODULE_ID, `state_change`);
-        utils.createMainTab(MODULE_ID, "Rejsetid", "Hej Hej", require('./../../../browser/modules/height')().max, "timer", false, MODULE_ID);
+        utils.createMainTab(MODULE_ID, "Rejsetid", helpText, require('./../../../browser/modules/height')().max, "timer", false, MODULE_ID);
         backboneEvents.get().on(`off:all`, () => {
             utils.cursorStyle().reset();
             active = false;
