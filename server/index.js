@@ -18,7 +18,19 @@ router.get('/api/otp/', function (req, response) {
     for (const [key, value] of Object.entries(data.parameters)) {
         urlParameters += `${key}=${value}&`
     }
-    let url = `https://otp.vidi.gc2.io/otp/routers/${route}/isochrone?arriveBy=${data.arriveBy ? "True" : "False"}&fromPlace=${data.y},${data.x}&mode=TRANSIT,WALK&date=${data.date}&time=${data.time}&maxWalkDistance=${data.maxWalkDistance}&cutoffSec=${cutOffSec}${urlParameters}`;
+    let mode;
+    switch (data.mode) {
+        case "transport-type-transit":
+            mode = "TRANSIT,WALK";
+            break;
+        case "transport-type-bicycle":
+            mode = "BICYCLE";
+            break;
+        case "transport-type-car":
+            mode = "CAR";
+            break;
+    }
+    let url = `https://otp.vidi.gc2.io/otp/routers/${route}/isochrone?arriveBy=${data.arriveBy ? "True" : "False"}&fromPlace=${data.y},${data.x}&mode=${mode}&date=${data.date}&time=${data.time}&maxWalkDistance=${data.maxWalkDistance}&cutoffSec=${cutOffSec}${urlParameters}`;
     if (data.arriveBy === true) url += `&toPlace=${data.y},${data.x}`;
     console.log(url)
     request.get(url, function (err, res, body) {

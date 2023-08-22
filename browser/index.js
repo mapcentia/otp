@@ -49,6 +49,7 @@ let defaultState = {
     coords: null,
     date: dayjs().format("YYYY-MM-DD"),
     time: dayjs().format("HH:mm"),
+    mode: "transport-type-transit",
 };
 
 colorGradient.setGradient(defaultState.startColor, defaultState.endColor);
@@ -74,6 +75,7 @@ class Otp extends React.Component {
     }
 
     handleChange(event) {
+        console.log(event);
         switch (event.target.id) {
             case 'otp-route':
                 this.setState({route: event.target.value});
@@ -104,6 +106,11 @@ class Otp extends React.Component {
                 break;
             case 'otp-end-color':
                 this.setState({endColor: event.target.value});
+                break;
+            case 'transport-type-transit':
+            case 'transport-type-bicycle':
+            case 'transport-type-car':
+                this.setState({mode: event.target.value});
                 break;
         }
         setTimeout(() => {
@@ -277,7 +284,11 @@ class Otp extends React.Component {
     }
 
     makeSearch(coords, zoom) {
-        if (marker) mapObj.removeLayer(marker)
+        if (this.state.startTime > this.state.endTime) {
+            alert("'Første rejsetidsinddeling i minutter' må ikke være større end 'Maksimale rejsetid i minutter'");
+            return;
+        }
+        if (marker) mapObj.removeLayer(marker);
         addMarker([coords[1], coords[0]]);
         let q = {
             x: coords[0],
@@ -288,6 +299,7 @@ class Otp extends React.Component {
             arriveBy: this.state.arriveBy,
             route: this.state.route,
             maxWalkDistance: this.state.maxWalkDistance,
+            mode: this.state.mode,
             parameters
         }
         store.custom_data = JSON.stringify(q);
@@ -315,28 +327,52 @@ class Otp extends React.Component {
     }
 
     render() {
-        const legendItems = this.state.colorGradient.map((f, i) => <li key={i} className="mb-2"><div className="d-flex "><input className="form-check-input me-2" type="checkbox" name={i}
-                                                                                      value={this.state.intervals[i]}
-                                                                                      checked={this.state.legendChecks[i]}
-                                                                           onChange={this.handleLegendCheck}/>
-            <div className="d-flex align-items gap-2">
-                <div className="d-inline-block"
-                        style={{
-                            width: "30px",
-                            height: "30px",
-                            backgroundColor: f
-                        }}></div>
-                <div>&#60;</div>
-                {Math.round(this.state.intervals[i] / 60)} minutter</div></div></li>);
+        const legendItems = this.state.colorGradient.map((f, i) => <li key={i} className="mb-2">
+            <div className="d-flex "><input className="form-check-input me-2" type="checkbox" name={i}
+                                            value={this.state.intervals[i]}
+                                            checked={this.state.legendChecks[i]}
+                                            onChange={this.handleLegendCheck}/>
+                <div className="d-flex align-items gap-2">
+                    <div className="d-inline-block"
+                         style={{
+                             width: "30px",
+                             height: "30px",
+                             backgroundColor: f
+                         }}></div>
+                    <div>&#60;</div>
+                    {Math.round(this.state.intervals[i] / 60)} minutter
+                </div>
+            </div>
+        </li>);
 
         return (
             <div>
+                <div className="d-flex mb-3">
+                    <span className="btn-group w-100">
+                        <input  className="btn-check" type="radio" name="transport-type" id="transport-type-transit" value="transport-type-transit"
+                               checked={this.state.mode === "transport-type-transit"} onChange={this.handleChange}/>
+                        <label htmlFor="transport-type-transit" className="btn btn-sm btn-outline-secondary">
+                            Offentlig transport
+                        </label>
+                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-bicycle" value="transport-type-bicycle"
+                               checked={this.state.mode === "transport-type-bicycle"} onChange={this.handleChange}/>
+                        <label htmlFor="transport-type-bicycle" className="btn btn-sm btn-outline-secondary">
+                            Cykel
+                        </label>
+                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-car" value="transport-type-car"
+                               checked={this.state.mode === "transport-type-car"} onChange={this.handleChange}/>
+                        <label htmlFor="transport-type-car" className="btn btn-sm btn-outline-secondary">
+                            Bil
+                        </label>
+                    </span>
+                </div>
                 <div className="places mb-3">
                     <div className="input-group mb-3">
-                        <input className="typeahead form-control otp-custom-search" type="text" placeholder="Adresse eller matrikelnr."/>
-                            <button className="btn btn-outline-secondary searchclear" type="button">
-                                <i className="bi bi-x-lg"/>
-                            </button>
+                        <input className="typeahead form-control otp-custom-search" type="text"
+                               placeholder="Adresse eller matrikelnr."/>
+                        <button className="btn btn-outline-secondary searchclear" type="button">
+                            <i className="bi bi-x-lg"/>
+                        </button>
                     </div>
                 </div>
                 <div className="mb-3">
@@ -349,10 +385,12 @@ class Otp extends React.Component {
                     </select>
                 </div>
                 <div className="mb-3 d-flex gap-2 mb-3">
-                    <div>Afgangstid</div><div className="form-check form-switch">
-                            <input type="checkbox" id="otp-arrive-by" className="form-check-input"
-                                              checked={this.state.arriveBy} onChange={this.handleChange}/>
-                </div><div>Ankomsttid</div>
+                    <div>Afgangstid</div>
+                    <div className="form-check form-switch">
+                        <input type="checkbox" id="otp-arrive-by" className="form-check-input"
+                               checked={this.state.arriveBy} onChange={this.handleChange}/>
+                    </div>
+                    <div>Ankomsttid</div>
                 </div>
                 <div className="d-flex gap-2 mb-3">
                     <div className="form-group">
