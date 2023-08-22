@@ -232,7 +232,7 @@ class Otp extends React.Component {
             let coords = [...this.geoJSON.features[0].geometry.coordinates];
             me.setState({coords: coords})
             me.makeSearch(coords, true)
-        }, "opt-custom-search");
+        }, ".otp-custom-search");
 
         // Handle click events on map
         mapObj.on("dblclick", function () {
@@ -315,73 +315,70 @@ class Otp extends React.Component {
     }
 
     render() {
-        const legendItems = this.state.colorGradient.map((f, i) => <li key={i}><input type="checkbox" name={i}
+        const legendItems = this.state.colorGradient.map((f, i) => <li key={i} className="mb-2"><div className="d-flex "><input className="form-check-input me-2" type="checkbox" name={i}
                                                                                       value={this.state.intervals[i]}
                                                                                       checked={this.state.legendChecks[i]}
-                                                                                      onChange={this.handleLegendCheck}/>
-            <div
-                style={{
-                    width: "30px",
-                    height: "30px",
-                    backgroundColor: f,
-                    display: "inline-block"
-                }}>&nbsp;</div>
-            &nbsp;&#60;&nbsp;
-            {Math.round(this.state.intervals[i] / 60)} minutter</li>);
+                                                                           onChange={this.handleLegendCheck}/>
+            <div className="d-flex align-items gap-2">
+                <div className="d-inline-block"
+                        style={{
+                            width: "30px",
+                            height: "30px",
+                            backgroundColor: f
+                        }}></div>
+                <div>&#60;</div>
+                {Math.round(this.state.intervals[i] / 60)} minutter</div></div></li>);
 
         return (
             <div>
-                <div id="conflict-places" className="places" style={this.marginBottomXl}>
-                    <input id="opt-custom-search"
-                           className="ejendom-custom-search typeahead" type="text"
-                           placeholder="Adresse eller matrikelnr."/>
+                <div className="places mb-3">
+                    <div className="input-group mb-3">
+                        <input className="typeahead form-control otp-custom-search" type="text" placeholder="Adresse eller matrikelnr."/>
+                            <button className="btn btn-outline-secondary searchclear" type="button">
+                                <i className="bi bi-x-lg"/>
+                            </button>
+                    </div>
                 </div>
-                <div className="form-group">
+                <div className="mb-3">
                     <label htmlFor="otp-route">Køreplan</label>
-                    <select value={this.state.route} id="otp-route" className="form-control"
+                    <select value={this.state.route} id="otp-route" className="form-select"
                             onChange={this.handleChange}>
                         {routes.map(rt =>
                             <option key={rt} value={rt}>{rt}</option>
                         )};
                     </select>
                 </div>
-                <div className="form-group">
-                    <div className="togglebutton">
-                        <label>
-                            Afgangstid <input type="checkbox" id="otp-arrive-by" className="togglebutton"
-                                              checked={this.state.arriveBy} onChange={this.handleChange}/> Ankomsttid
-                        </label>
+                <div className="mb-3 d-flex gap-2 mb-3">
+                    <div>Afgangstid</div><div className="form-check form-switch">
+                            <input type="checkbox" id="otp-arrive-by" className="form-check-input"
+                                              checked={this.state.arriveBy} onChange={this.handleChange}/>
+                </div><div>Ankomsttid</div>
+                </div>
+                <div className="d-flex gap-2 mb-3">
+                    <div className="form-group">
+                        <label htmlFor="otp-date">Dato</label>
+                        <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
+                               value={this.state.date} onChange={this.handleChange}/>
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="otp-time">Tid</label>
+                        <input type="time" id="otp-time" className="form-control" value={this.state.time}
+                               onChange={this.handleChange}/>
                     </div>
                 </div>
-                <div className="row">
-                    <div className="col-md-6">
-                        <div className="form-group">
-                            <label htmlFor="otp-date">Dato</label>
-                            <input type="date" id="otp-date" className="form-control" min="09:00" max="18:00"
-                                   value={this.state.date} onChange={this.handleChange}/>
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="form-group">
-                            <label htmlFor="otp-time">Tid</label>
-                            <input type="time" id="otp-time" className="form-control" value={this.state.time}
-                                   onChange={this.handleChange}/>
-                        </div>
-                    </div>
-                </div>
-                <div className="form-group">
+                <div className="mb-3">
                     <label htmlFor="otp-start-time">Første rejsetidsinddeling i minutter</label>
                     <input type="number" id="otp-start-time" className="form-control"
                            value={this.state.startTime}
                            onChange={this.handleChange}/>
                 </div>
-                <div className="form-group">
+                <div className="mb-3">
                     <label htmlFor="otp-end-time">Maksimale rejsetid i minutter</label>
                     <input type="number" id="otp-end-time" className="form-control"
                            value={this.state.endTime}
                            onChange={this.handleChange}/>
                 </div>
-                <div className="form-group">
+                <div className="mb-3">
                     <label htmlFor="otp-num-of-class">Antal intervaller (max. 7)</label>
                     <input type="number" id="otp-num-of-class" className="form-control"
                            value={this.state.numOfClass}
@@ -389,41 +386,37 @@ class Otp extends React.Component {
                            max="7"
                            onChange={this.handleChange}/>
                 </div>
-                <div className="form-group">
+                <div className="mb-3">
                     <label htmlFor="otp-max-walk-distance">Maksimal gangafstand i meter</label>
                     <input type="number" id="otp-max-walk-distance" className="form-control"
                            value={this.state.maxWalkDistance}
                            onChange={this.handleChange}/>
                 </div>
-                <div className="row">
-                    <div className="col-md-6">
-                        <div className="form-group">
-                            <label htmlFor="otp-start-color">Startfarve</label>
-                            <input type="color" id="otp-start-color" className="form-control"
-                                   value={this.state.startColor}
-                                   onChange={this.handleChange}/>
-                        </div>
+                <div className="d-flex w-100 gap-2 mb-3">
+                    <div className="w-50">
+                        <label htmlFor="otp-start-color">Startfarve</label>
+                        <input type="color" id="otp-start-color" className="form-control"
+                               value={this.state.startColor}
+                               onChange={this.handleChange}/>
                     </div>
-                    <div className="col-md-6">
-                        <div className="form-group">
-                            <label htmlFor="otp-end-color">Slutfarve</label>
-                            <input type="color" id="otp-end-color" className="form-control"
-                                   value={this.state.endColor}
-                                   onChange={this.handleChange}/>
-                        </div>
+                    <div className="w-50">
+                        <label htmlFor="otp-end-color">Slutfarve</label>
+                        <input type="color" id="otp-end-color" className="form-control"
+                               value={this.state.endColor}
+                               onChange={this.handleChange}/>
                     </div>
                 </div>
-                <div>
+                <div className="mb-3">
                     <label htmlFor="opacity">Gennemsigtighed</label>
-                    <input type="range" id="opacity" name="opacity"
+                    <input className="form-range" type="range" id="opacity" name="opacity"
                            min="0.01" max="1" step="0.01" value={this.state.opacity}
                            onChange={this.handleOpacityChange}/>
                 </div>
-                <div>
-                    <button disabled={this.state.coords === null} className="btn btn-primary"
+                <div className="mb-3 d-flex gap-2">
+                    <button disabled={this.state.coords === null} className="btn btn-outline-primary"
                             onClick={this.refresh}>Genberegn
                     </button>
-                    <button className="btn btn-danger" onClick={this.resetOnlyMap}>Ryd kort</button>
+                    <button className="btn btn-outline-danger" onClick={this.resetOnlyMap}>Ryd kort</button>
                 </div>
                 <div>
                     <ul style={{listStyleType: "none", padding: 0, margin: 0}}>{legendItems}</ul>
@@ -450,7 +443,7 @@ module.exports = module.exports = {
         mapObj = cloud.get().map;
         state.listenTo(MODULE_ID, _self);
         state.listen(MODULE_ID, `state_change`);
-        utils.createMainTab(MODULE_ID, "Rejsetid", helpText, require('./../../../browser/modules/height')().max, "timer", false, MODULE_ID);
+        utils.createMainTab(MODULE_ID, "Rejsetid", helpText, require('./../../../browser/modules/height')().max, "bi bi-stopwatch", false, MODULE_ID);
         backboneEvents.get().on(`off:all`, () => {
             utils.cursorStyle().reset();
             active = false;
