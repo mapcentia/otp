@@ -69,6 +69,7 @@ class Otp extends React.Component {
         this.resetAll = this.resetAll.bind(this);
         this.resetOnlyMap = this.resetOnlyMap.bind(this);
         this.refresh = this.refresh.bind(this);
+        this.download = this.download.bind(this);
         this.marginBottomXl = {
             marginBottom: "24px"
         };
@@ -317,13 +318,27 @@ class Otp extends React.Component {
     }
 
     resetOnlyMap() {
-        this.setState({geoJSON: null})
-        setSnapShot(this.state);
-        resetMap();
+        this.setState({geoJSON: null});
+        this.setState({coords: null});
+        setTimeout(() => {
+            setSnapShot(this.state);
+            resetMap();
+        }, 100)
     }
 
     refresh() {
         this.makeSearch(this.state.coords)
+    }
+
+    download() {
+        console.log(this.state.geoJSON)
+        let blob = new Blob([JSON.stringify(this.state.geoJSON)], {type: 'application/json'});
+        let link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'file.geojson';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     render() {
@@ -349,17 +364,20 @@ class Otp extends React.Component {
             <div>
                 <div className="d-flex mb-3">
                     <span className="btn-group w-100">
-                        <input  className="btn-check" type="radio" name="transport-type" id="transport-type-transit" value="transport-type-transit"
+                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-transit"
+                               value="transport-type-transit"
                                checked={this.state.mode === "transport-type-transit"} onChange={this.handleChange}/>
                         <label htmlFor="transport-type-transit" className="btn btn-sm btn-outline-secondary">
                             Offentlig transport
                         </label>
-                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-bicycle" value="transport-type-bicycle"
+                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-bicycle"
+                               value="transport-type-bicycle"
                                checked={this.state.mode === "transport-type-bicycle"} onChange={this.handleChange}/>
                         <label htmlFor="transport-type-bicycle" className="btn btn-sm btn-outline-secondary">
                             Cykel
                         </label>
-                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-car" value="transport-type-car"
+                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-car"
+                               value="transport-type-car"
                                checked={this.state.mode === "transport-type-car"} onChange={this.handleChange}/>
                         <label htmlFor="transport-type-car" className="btn btn-sm btn-outline-secondary">
                             Bil
@@ -451,10 +469,15 @@ class Otp extends React.Component {
                            onChange={this.handleOpacityChange}/>
                 </div>
                 <div className="mb-3 d-flex gap-2">
-                    <button disabled={this.state.coords === null} className="btn btn-outline-primary"
+                    <button disabled={this.state.geoJSON === null} className="btn btn-outline-primary"
                             onClick={this.refresh}>Genberegn
                     </button>
-                    <button className="btn btn-outline-danger" onClick={this.resetOnlyMap}>Ryd kort</button>
+                    <button className="btn btn-outline-danger" onClick={this.resetOnlyMap}
+                            disabled={this.state.geoJSON === null}>Ryd kort
+                    </button>
+                    <button className="btn btn-outline-secondary" onClick={this.download}
+                            disabled={this.state.geoJSON === null}>Hent isokron som GeoJSON
+                    </button>
                 </div>
                 <div>
                     <ul style={{listStyleType: "none", padding: 0, margin: 0}}>{legendItems}</ul>
