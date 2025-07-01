@@ -376,12 +376,12 @@ class Otp extends React.Component {
                         <label htmlFor="transport-type-bicycle" className="btn btn-sm btn-outline-secondary">
                             Cykel
                         </label>
-                        <input className="btn-check" type="radio" name="transport-type" id="transport-type-car"
-                               value="transport-type-car"
-                               checked={this.state.mode === "transport-type-car"} onChange={this.handleChange}/>
-                        <label htmlFor="transport-type-car" className="btn btn-sm btn-outline-secondary">
-                            Bil
-                        </label>
+                        {/*<input className="btn-check" type="radio" name="transport-type" id="transport-type-car"*/}
+                        {/*       value="transport-type-car"*/}
+                        {/*       checked={this.state.mode === "transport-type-car"} onChange={this.handleChange}/>*/}
+                        {/*<label htmlFor="transport-type-car" className="btn btn-sm btn-outline-secondary">*/}
+                        {/*    Bil*/}
+                        {/*</label>*/}
                     </span>
                 </div>
                 <div className="places mb-3">
