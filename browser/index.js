@@ -241,6 +241,9 @@ class Otp extends React.Component {
             me.setState({coords: coords})
             me.makeSearch(coords, true)
         }, ".otp-custom-search");
+        // adjust search text
+        let placeholder = window.vidiConfig?.searchConfig?.placeholderText ?? "Adresse eller matrikelnr.";
+        $(".otp-custom-search.typeahead.form-control:not(.tt-hint)").attr("placeholder", placeholder);
 
         // Handle click events on map
         mapObj.on("dblclick", function () {
