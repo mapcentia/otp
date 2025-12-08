@@ -4,6 +4,7 @@ const React = require("react");
 const search = require("./../../../browser/modules/search/danish");
 const dayjs = require("dayjs");
 import Gradient from "javascript-color-gradient";
+import {createRoot} from "react-dom/client";
 
 
 const MODULE_ID = 'otp';
@@ -518,10 +519,7 @@ module.exports = module.exports = {
             active = true;
             state.getModuleState(MODULE_ID).then(initialState => {
                 let ds = initialState || defaultState;
-                ReactDOM.render(
-                    <Otp defaultState={ds}/>,
-                    document.getElementById(MODULE_ID)
-                );
+                createRoot(document.getElementById(MODULE_ID)).render(<Otp/>)
                 resetMap();
                 setTimeout(() => {
                     if (ds.geoJSON) {
