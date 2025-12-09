@@ -519,7 +519,7 @@ module.exports = module.exports = {
             active = true;
             state.getModuleState(MODULE_ID).then(initialState => {
                 let ds = initialState || defaultState;
-                createRoot(document.getElementById(MODULE_ID)).render(<Otp/>)
+                createRoot(document.getElementById(MODULE_ID)).render(<Otp defaultState={ds}/>)
                 resetMap();
                 setTimeout(() => {
                     if (ds.geoJSON) {
