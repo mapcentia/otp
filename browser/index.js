@@ -1,5 +1,3 @@
-import ReactDOM from "react-dom";
-
 const React = require("react");
 const search = require("./../../../browser/modules/search/danish");
 const dayjs = require("dayjs");
@@ -8,6 +6,9 @@ import {createRoot} from "react-dom/client";
 
 
 const MODULE_ID = 'otp';
+const PANE_NAME = 'otp-pane';
+const LOW_INDEX = 9999;
+const HIGH_INDEX = 99999;
 let cloud;
 let utils;
 let transformPoint;
@@ -20,6 +21,15 @@ let mState = null;
 let mapObj;
 let marker;
 let active = false;
+let reactRoot = null;
+
+// Lazily create (or reuse) the single React root bound to the module container.
+const getReactRoot = () => {
+    if (!reactRoot) {
+        reactRoot = createRoot(document.getElementById(MODULE_ID));
+    }
+    return reactRoot;
+};
 const colorGradient = new Gradient();
 const config = require('../../../config/config.js');
 const routes = config?.extensionConfig?.otp?.routes || ['default'];
@@ -51,6 +61,7 @@ let defaultState = {
     date: dayjs().format("YYYY-MM-DD"),
     time: dayjs().format("HH:mm"),
     mode: "transport-type-transit",
+    placedOnTop: defaults?.placedOnTop || false
 };
 
 colorGradient.setGradient(defaultState.startColor, defaultState.endColor);
@@ -71,6 +82,7 @@ class Otp extends React.Component {
         this.resetOnlyMap = this.resetOnlyMap.bind(this);
         this.refresh = this.refresh.bind(this);
         this.download = this.download.bind(this);
+        this.handlePlacement = this.handlePlacement.bind(this);
         this.marginBottomXl = {
             marginBottom: "24px"
         };
@@ -129,7 +141,17 @@ class Otp extends React.Component {
                 l.setStyle({fillOpacity: v});
 
         })
-        setSnapShot(this.state)
+        setTimeout(() => {
+            setSnapShot(this.state)
+        })
+    }
+
+    handlePlacement(e) {
+        this.setState({placedOnTop: e.target.checked});
+        mapObj.getPane(PANE_NAME).style.zIndex =e.target.checked ? HIGH_INDEX : LOW_INDEX
+        setTimeout(() => {
+            setSnapShot(this.state)
+        })
     }
 
     handleLegendCheck(event) {
@@ -196,7 +218,6 @@ class Otp extends React.Component {
         this.setState({legendChecks: Array(num).fill(true)})
     }
 
-
     componentDidMount() {
         let me = this;
         let uri = '/api/otp';
@@ -208,6 +229,7 @@ class Otp extends React.Component {
             db: "",
             clickable: false,
             sql: "sdssd",
+            pane: PANE_NAME,
             styleMap: (feature, layer) => {
                 let time = feature.properties.time;
                 let i = this.state.intervals.indexOf(time);
@@ -230,13 +252,14 @@ class Otp extends React.Component {
                 alert('Det er sket en fejl. Det er sandsynligvis forårsaget af et ugyldigt parametervalg. Tilpasse indstillingerne og prøv igen');
             },
             onLoad: function (e) {
-                // cloud.get().zoomToExtentOfgeoJsonStore(this, 17)
                 me.setState({geoJSON: e.geoJSON});
-                setSnapShot(me.state)
+                setTimeout(() => {
+                    setSnapShot(me.state)
+                })
             }
         });
         cloud.get().addGeoJsonStore(store);
-
+        mapObj.getPane(PANE_NAME).style.zIndex = me.state.placedOnTop ? HIGH_INDEX : LOW_INDEX;
         search.init(function () {
             let coords = [...this.geoJSON.features[0].geometry.coordinates];
             me.setState({coords: coords})
@@ -284,6 +307,7 @@ class Otp extends React.Component {
                 if (marker) mapObj.removeLayer(marker);
                 if (ds.coords) addMarker([ds.coords[1], ds.coords[0]]);
                 setSnapShot(this.state)
+                mapObj.getPane(PANE_NAME).style.zIndex = ds.placedOnTop ? HIGH_INDEX : LOW_INDEX
             }, 500)
         }
     }
@@ -327,7 +351,7 @@ class Otp extends React.Component {
         setTimeout(() => {
             setSnapShot(this.state);
             resetMap();
-        }, 100)
+        }, 0);
     }
 
     refresh() {
@@ -472,6 +496,14 @@ class Otp extends React.Component {
                            min="0.01" max="1" step="0.01" value={this.state.opacity}
                            onChange={this.handleOpacityChange}/>
                 </div>
+                <div className="mb-3 d-flex gap-2 mb-3">
+                    <div>Placering øverst</div>
+                    <div className="form-check form-switch">
+                        <input type="checkbox" id="otp-move-top" className="form-check-input"
+                               checked={this.state.placedOnTop} onChange={this.handlePlacement}/>
+                    </div>
+                    <div>nederst</div>
+                </div>
                 <div className="mb-3 d-flex gap-2">
                     <button disabled={this.state.geoJSON === null} className="btn btn-outline-primary"
                             onClick={this.refresh}>Genberegn
@@ -504,10 +536,10 @@ module.exports = module.exports = {
     },
 
     init: function () {
-        const me = this;
         mapObj = cloud.get().map;
         state.listenTo(MODULE_ID, _self);
         state.listen(MODULE_ID, `state_change`);
+        mapObj.createPane(PANE_NAME);
         utils.createMainTab(MODULE_ID, "Rejsetid", helpText, require('./../../../browser/modules/height')().max, "bi bi-stopwatch", false, MODULE_ID);
         backboneEvents.get().on(`off:all`, () => {
             utils.cursorStyle().reset();
@@ -519,7 +551,7 @@ module.exports = module.exports = {
             active = true;
             state.getModuleState(MODULE_ID).then(initialState => {
                 let ds = initialState || defaultState;
-                createRoot(document.getElementById(MODULE_ID)).render(<Otp defaultState={ds}/>)
+                getReactRoot().render(<Otp defaultState={ds}/>)
                 resetMap();
                 setTimeout(() => {
                     if (ds.geoJSON) {
@@ -538,7 +570,7 @@ module.exports = module.exports = {
 
 
     getState: () => {
-        // console.log("GET STATE", mState)
+        console.log("GET STATE", mState)
         return mState;
     },
 
@@ -546,10 +578,7 @@ module.exports = module.exports = {
         const state = newState ? newState : defaultState;
         return new Promise((resolve) => {
             state.fromSnapShot = true;
-            ReactDOM.render(
-                <Otp defaultState={state}/>,
-                document.getElementById(MODULE_ID)
-            );
+            getReactRoot().render(<Otp defaultState={state}/>);
             resolve();
         });
     },
