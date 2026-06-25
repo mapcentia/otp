@@ -223,7 +223,7 @@ class Otp extends React.Component {
         let uri = '/api/otp';
         store = new geocloud.sqlStore({
             jsonp: false,
-            method: "GET",
+            method: "POST",
             host: "",
             uri: uri,
             db: "",
@@ -331,7 +331,7 @@ class Otp extends React.Component {
             mode: this.state.mode,
             parameters
         }
-        store.custom_data = JSON.stringify(q);
+        store.custom_data = q;
         store.load();
     }
 

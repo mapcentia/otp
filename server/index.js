@@ -9,9 +9,8 @@ const router = express.Router();
 const configUrl = require('../../../config/config.js').configUrl;
 const request = require('request');
 
-router.get('/api/otp/', function (req, response) {
-    const data = JSON.parse(req.query.custom_data);
-    console.log(data)
+router.post('/api/otp/', function (req, response) {
+    const data = req.body.custom_data;
     const cutOffSec = data.intervals.join('&cutoffSec=')
     const route = data.route !== null ? data.route : "default";
     let urlParameters = "&";
